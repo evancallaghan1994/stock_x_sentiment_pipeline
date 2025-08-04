@@ -1,0 +1,33 @@
+# Virtual environment
+venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+
+# VSCode settings 
+.vscode/
+
+# Parquet files
+*.parquet
+
+# CSV files
+*.csv
+
+# JSON files
+*.json
+
+# HTML files
+*.html
+
+# CSS files
