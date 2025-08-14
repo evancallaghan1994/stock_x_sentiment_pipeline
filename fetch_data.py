@@ -6,27 +6,34 @@ This script fetches stock data and twitter sentiment data for a given stock tick
 # We're going to use playwright to fetch data from the web.
 import asyncio
 from playwright.async_api import async_playwright
+import pandas as pd
+
+# Get list of S&P 500 tickers
+import pandas as pd
+tickers_df = pd.read_csv("sp500_tickers.csv")
+tickers = tickers_df['Symbol'].tolist()
 
 # We use async so that we playwright can handle delays, loading, waits, etc.
-async def fetch_stock_data(symbol):
+# Function to fetch stock data for a given ticker
+async def fetch_stock_data(symbol, page):
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1d&interval=1m"
 
-    # Context manager to start and stop playwright
+    # Navigate to the URL and wait for the page to load
+    await page.goto(url)
+    # Fetch HTML/JON from the page
+    content = await page.content()
+    print(f"Data for {symbol}:")
+    print(content[:500])  # print first 500 chars to avoid huge output
+
+# Wrapper to fetch multiple tickers
+async def fetch_all_stocks(tickers):
     async with async_playwright() as p:
-        # Launch a headless chromium browser
         browser = await p.chromium.launch()
-        # Open a new tab
         page = await browser.new_page()
-        # Navigate to the URL and wait for the page to load
-        await page.goto(url)
-        # Fetch HTML/JON from the page
-        content = await page.content()
-        # Preview what Playwright fetched
-        print(content)
-        # Close browswer to free resources
+        for symbol in tickers:
+            await fetch_stock_data(symbol, page)
         await browser.close()
 
-# Sanity check to see if the script is working
-# We need this to use asyncio.run() to run the coroutine
-asyncio.run(fetch_stock_data("AAPL"))
-    
+# Run for 10 tickers to test
+asyncio.run(fetch_all_stocks(tickers[:10]))  # example: only first 10 tickers for testing
+
