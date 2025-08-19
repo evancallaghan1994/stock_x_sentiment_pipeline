@@ -9,13 +9,71 @@ from playwright.async_api import async_playwright
 import pandas as pd
 from pyspark.sql import SparkSession
 import json
+from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+# Google Cloud Storage imports
+from google.cloud import storage
+from google.cloud.exceptions import NotFound
 
 # Initialize Spark session
 spark = SparkSession.builder.appName('sp500_stock_data').getOrCreate()
 
+# Google Cloud Storage configuration
+load_dotenv()
+BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
+
+def upload_to_gcs(local_file_path, gcs_blob_name):
+    """
+    Upload a file to Google Cloud Storage bucket
+    
+    Args:
+        local_file_path (str): Path to the local file to upload
+        gcs_blob_name (str): Name to give the file in GCS bucket
+    """
+    try:
+        # Initialize the GCS client
+        storage_client = storage.Client()
+        
+        # Get the bucket
+        bucket = storage_client.bucket(BUCKET_NAME)
+        
+        # Create a blob object
+        blob = bucket.blob(gcs_blob_name)
+        
+        # Upload the file
+        blob.upload_from_filename(local_file_path)
+        
+        print(f"Successfully uploaded {local_file_path} to gs://{BUCKET_NAME}/{gcs_blob_name}")
+        
+    except NotFound:
+        print(f"Bucket {BUCKET_NAME} not found. Please check your bucket name and permissions.")
+    except Exception as e:
+        print(f"Error uploading to GCS: {e}")
+
+def upload_parquet_to_gcs(local_parquet_path):
+    """
+    Upload parquet data to GCS with timestamped filename
+    
+    Args:
+        local_parquet_path (str): Path to the local parquet file
+    """
+    # Generate timestamp for unique filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    gcs_filename = f"sp500_stock_data_{timestamp}.parquet"
+    
+    # Upload to GCS
+    upload_to_gcs(local_parquet_path, gcs_filename)
+    
+    return f"gs://{BUCKET_NAME}/{gcs_filename}"
+
 # Get list of S&P 500 tickers
-tickers_df = pd.read_csv("sp500_tickers.csv")
-tickers = tickers_df['Symbol'].tolist()
+# tickers_df = pd.read_csv("sp500_tickers.csv")
+# tickers = tickers_df['Symbol'].tolist()
+
+# TESTING: Testing script with small list of tickers
+tickers = ['AAPL', 'MSFT', 'AMZN']
 
 # We use async so that we playwright can handle delays, loading, waits, etc.
 # Function to fetch stock data for a given ticker
@@ -79,8 +137,19 @@ async def main():
     sp500_df = await fetch_all_stocks(tickers)
     # Quick preview of PySpark DataFrame
     sp500_df.show(5, truncate=False)
+    
     # Save to parquet local file
-    sp500_df.write.mode('overwrite').parquet('sp500_stock_data.parquet')
+    local_parquet_path = 'sp500_stock_data.parquet'
+    sp500_df.write.mode('overwrite').parquet(local_parquet_path)
+    
+    # Upload to Google Cloud Storage
+    print("Uploading data to Google Cloud Storage...")
+    gcs_path = upload_parquet_to_gcs(local_parquet_path)
+    print(f"Data successfully uploaded to: {gcs_path}")
+    
+    # Optionally, clean up local file after upload
+    # os.remove(local_parquet_path)
+    # print("Local parquet file cleaned up")
 
 # Python guard to ensure main() is only run when the script is executed directly
 if __name__ == "__main__":
