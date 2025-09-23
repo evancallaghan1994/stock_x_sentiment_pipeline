@@ -69,17 +69,18 @@ def upload_parquet_to_gcs(local_parquet_path):
     return f"gs://{BUCKET_NAME}/{gcs_filename}"
 
 # Get list of S&P 500 tickers
-# tickers_df = pd.read_csv("sp500_tickers.csv")
-# tickers = tickers_df['Symbol'].tolist()
+tickers_df = pd.read_csv("sp500_tickers.csv")
+tickers = tickers_df['Symbol'].tolist()
 
+# Remove the testing section:
 # TESTING: Testing script with small list of tickers
-tickers = ['AAPL', 'MSFT', 'AMZN']
+# tickers = ['AAPL', 'MSFT', 'AMZN']
 
 # We use async so that we playwright can handle delays, loading, waits, etc.
 # Function to fetch stock data for a given ticker
 async def fetch_stock_data(symbol, page):
-    # Yahoo Finance API endpoint
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1d&interval=1m"
+    # Yahoo Finance API endpoint - Updated for 5 years daily data
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5y&interval=1d"
     # Navigate to the URL and wait for the page to load
     await page.goto(url)
     # Fetch HTML/JON from the page
