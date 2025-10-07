@@ -7,7 +7,6 @@ This script fetches stock data and twitter sentiment data for a given stock tick
 import asyncio
 from playwright.async_api import async_playwright
 import pandas as pd
-from pyspark.sql import SparkSession
 import json
 from datetime import datetime
 import os
@@ -17,8 +16,7 @@ from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
-# Initialize Spark session
-spark = SparkSession.builder.appName('sp500_stock_data').getOrCreate()
+# Note: Using pandas for local processing, PySpark will be used in Databricks
 
 # Google Cloud Storage configuration
 load_dotenv()
@@ -83,7 +81,7 @@ async def fetch_stock_data(symbol, page):
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=5y&interval=1d"
     # Navigate to the URL and wait for the page to load
     await page.goto(url)
-    # Fetch HTML/JON from the page
+    # Fetch HTML/JSON from the page
     content = await page.content()
     # The JSON is wrapped in <pre>...</pre>, so we need to extract it
     start = content.find('{') # find the first {
@@ -93,6 +91,33 @@ async def fetch_stock_data(symbol, page):
     data = json.loads(json_str)
     # Add new key-value pair so we always know which ticker we're working with
     data['symbol'] = symbol
+    
+    # Add additional valuation metrics
+    try:
+        # Get additional metrics from the API response
+        if 'chart' in data and 'result' in data['chart']:
+            result = data['chart']['result'][0]
+            
+            # Add valuation metrics if available
+            if 'meta' in result:
+                meta = result['meta']
+                data['pe_ratio'] = meta.get('trailingPE', None)
+                data['market_cap'] = meta.get('marketCap', None)
+                data['dividend_yield'] = meta.get('dividendYield', None)
+                data['eps'] = meta.get('trailingEPS', None)
+                data['pb_ratio'] = meta.get('priceToBook', None)
+                data['ps_ratio'] = meta.get('priceToSales', None)
+                
+    except Exception as e:
+        print(f"Warning: Could not extract additional metrics for {symbol}: {e}")
+        # Set default values if extraction fails
+        data['pe_ratio'] = None
+        data['market_cap'] = None
+        data['dividend_yield'] = None
+        data['eps'] = None
+        data['pb_ratio'] = None
+        data['ps_ratio'] = None
+    
     # Return the data
     return data
 
@@ -129,19 +154,21 @@ async def fetch_all_stocks(tickers):
         # Close the browser
         await browser.close()
 
-    # Convert list of dictionaries to PySpark DataFrame
-    result_df = spark.createDataFrame(all_data)
+    # Convert list of dictionaries to pandas DataFrame
+    result_df = pd.DataFrame(all_data)
     return result_df
 # Orchestrate the fetching process
 async def main():
     # Fetch all stock data
     sp500_df = await fetch_all_stocks(tickers)
-    # Quick preview of PySpark DataFrame
-    sp500_df.show(5, truncate=False)
+    # Quick preview of pandas DataFrame
+    print("DataFrame shape:", sp500_df.shape)
+    print("First 5 rows:")
+    print(sp500_df.head())
     
     # Save to parquet local file
     local_parquet_path = 'sp500_stock_data.parquet'
-    sp500_df.write.mode('overwrite').parquet(local_parquet_path)
+    sp500_df.to_parquet(local_parquet_path, index=False)
     
     # Upload to Google Cloud Storage
     print("Uploading data to Google Cloud Storage...")
