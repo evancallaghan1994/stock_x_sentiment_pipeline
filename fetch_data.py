@@ -70,8 +70,8 @@ def upload_parquet_to_gcs(local_parquet_path):
 tickers_df = pd.read_csv("sp500_tickers.csv")
 tickers = tickers_df['Symbol'].tolist()
 
-# Remove the testing section:
-# TESTING: Testing script with small list of tickers
+# Get full S&P 500 ticker list
+# TESTING: Uncomment the line below to test with a small subset first
 # tickers = ['AAPL', 'MSFT', 'AMZN']
 
 # We use async so that we playwright can handle delays, loading, waits, etc.
@@ -89,44 +89,57 @@ async def fetch_stock_data(symbol, page):
     json_str = content[start:end] # slices out the JSON as a string
     # Convert string to Python dictionary
     data = json.loads(json_str)
-    # Add new key-value pair so we always know which ticker we're working with
-    data['symbol'] = symbol
     
-    # Add additional valuation metrics
+    # Extract time series data from the JSON response
+    stock_records = []
+    
     try:
-        # Get additional metrics from the API response
-        if 'chart' in data and 'result' in data['chart']:
+        if 'chart' in data and 'result' in data['chart'] and len(data['chart']['result']) > 0:
             result = data['chart']['result'][0]
             
-            # Add valuation metrics if available
-            if 'meta' in result:
-                meta = result['meta']
-                data['pe_ratio'] = meta.get('trailingPE', None)
-                data['market_cap'] = meta.get('marketCap', None)
-                data['dividend_yield'] = meta.get('dividendYield', None)
-                data['eps'] = meta.get('trailingEPS', None)
-                data['pb_ratio'] = meta.get('priceToBook', None)
-                data['ps_ratio'] = meta.get('priceToSales', None)
+            
+            # Get timestamps and price data
+            timestamps = result.get('timestamp', [])
+            indicators = result.get('indicators', {})
+            quote_data = indicators.get('quote', [{}])[0] if indicators.get('quote') else {}
+            
+            # Extract OHLCV data
+            opens = quote_data.get('open', [])
+            highs = quote_data.get('high', [])
+            lows = quote_data.get('low', [])
+            closes = quote_data.get('close', [])
+            volumes = quote_data.get('volume', [])
+            
+            # Create records for each date
+            for i, timestamp in enumerate(timestamps):
+                # Convert Unix timestamp to datetime
+                date = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
+                
+                record = {
+                    'symbol': symbol,
+                    'date': date,
+                    'open': opens[i] if i < len(opens) and opens[i] is not None else None,
+                    'high': highs[i] if i < len(highs) and highs[i] is not None else None,
+                    'low': lows[i] if i < len(lows) and lows[i] is not None else None,
+                    'close': closes[i] if i < len(closes) and closes[i] is not None else None,
+                    'volume': volumes[i] if i < len(volumes) and volumes[i] is not None else None
+                }
+                
+                stock_records.append(record)
                 
     except Exception as e:
-        print(f"Warning: Could not extract additional metrics for {symbol}: {e}")
-        # Set default values if extraction fails
-        data['pe_ratio'] = None
-        data['market_cap'] = None
-        data['dividend_yield'] = None
-        data['eps'] = None
-        data['pb_ratio'] = None
-        data['ps_ratio'] = None
+        print(f"Error extracting time series data for {symbol}: {e}")
+        return []
     
-    # Return the data
-    return data
+    # Return list of records (one per date)
+    return stock_records
 
 # Wrapper to fetch multiple tickers
-# Returns a list of dictionaries, one per ticker
+# Returns a list of dictionaries, one per ticker-date combination
 # Being async allows us to fetch all stocks concurrently using await and asyncio.gather
 async def fetch_all_stocks(tickers):
-    # initialize empty list to store all ticker JSON data
-    all_data = []
+    # initialize empty list to store all stock records
+    all_records = []
     # Start playwright in async context
     # Launches a headless browswer and opens a new page
     async with async_playwright() as p:
@@ -137,41 +150,88 @@ async def fetch_all_stocks(tickers):
             page = await browser.new_page()
             try:
                 print(f"Fetching {symbol}")
-                data = await fetch_stock_data(symbol, page)
-                return data
+                records = await fetch_stock_data(symbol, page)
+                return records
             except Exception as e:
                 print(f"Error fetching {symbol}: {e}")
-                return None
+                return []
             finally:
                 await page.close()
         
         # Use asyncio.gather to run all fetches concurrently
         results = await asyncio.gather(*[fetch_single_stock(symbol) for symbol in tickers])
         
-        # Filter out None results (failed fetches) and add to all_data
-        all_data = [data for data in results if data is not None]
+        # Flatten all records from all tickers into a single list
+        for ticker_records in results:
+            if ticker_records:  # Only add non-empty lists
+                all_records.extend(ticker_records)
         
         # Close the browser
         await browser.close()
 
     # Convert list of dictionaries to pandas DataFrame
-    result_df = pd.DataFrame(all_data)
+    result_df = pd.DataFrame(all_records)
     return result_df
 # Orchestrate the fetching process
 async def main():
     # Fetch all stock data
     sp500_df = await fetch_all_stocks(tickers)
+    
     # Quick preview of pandas DataFrame
     print("DataFrame shape:", sp500_df.shape)
+    print("Columns:", sp500_df.columns.tolist())
     print("First 5 rows:")
     print(sp500_df.head())
+    
+    # Check for data quality issues
+    print("\nData Quality Check:")
+    print(f"Total records: {len(sp500_df)}")
+    print(f"Unique symbols: {sp500_df['symbol'].nunique()}")
+    print(f"Date range: {sp500_df['date'].min()} to {sp500_df['date'].max()}")
+    
+    # Check for null values
+    print("\nNull value counts:")
+    print(sp500_df.isnull().sum())
+    
+    # Check for static pricing (the main issue we're investigating)
+    print("\n=== PRICE VOLATILITY ANALYSIS ===")
+    for symbol in sp500_df['symbol'].unique()[:5]:  # Check first 5 symbols
+        symbol_data = sp500_df[sp500_df['symbol'] == symbol]
+        if len(symbol_data) > 1:
+            unique_closes = symbol_data['close'].nunique()
+            total_records = len(symbol_data)
+            print(f"{symbol}: {unique_closes} unique prices out of {total_records} records")
+            if unique_closes == 1:
+                print(f"  ⚠️  STATIC PRICING DETECTED: All prices = {symbol_data['close'].iloc[0]}")
+            else:
+                price_range = f"{symbol_data['close'].min():.2f} - {symbol_data['close'].max():.2f}"
+                print(f"  ✅ Price range: ${price_range}")
+    
+    # Overall volatility check
+    total_unique_prices = sp500_df['close'].nunique()
+    total_records = len(sp500_df)
+    print(f"\nOVERALL: {total_unique_prices} unique prices out of {total_records} total records")
+    if total_unique_prices < total_records * 0.1:  # Less than 10% unique prices
+        print("⚠️  WARNING: Very low price volatility detected across all stocks!")
+        print("   This suggests static pricing or data quality issues.")
+    else:
+        print("✅ Good price volatility detected across the dataset.")
+    
+    # Sample a few records to verify data looks correct
+    print("\nSample records for AAPL (if available):")
+    aapl_sample = sp500_df[sp500_df['symbol'] == 'AAPL'].head(3)
+    if not aapl_sample.empty:
+        print(aapl_sample[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume']])
+    else:
+        print("No AAPL data found, showing first 3 records:")
+        print(sp500_df.head(3)[['symbol', 'date', 'open', 'high', 'low', 'close', 'volume']])
     
     # Save to parquet local file
     local_parquet_path = 'sp500_stock_data.parquet'
     sp500_df.to_parquet(local_parquet_path, index=False)
     
     # Upload to Google Cloud Storage
-    print("Uploading data to Google Cloud Storage...")
+    print("\nUploading data to Google Cloud Storage...")
     gcs_path = upload_parquet_to_gcs(local_parquet_path)
     print(f"Data successfully uploaded to: {gcs_path}")
     
