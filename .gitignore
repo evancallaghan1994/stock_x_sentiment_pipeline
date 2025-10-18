@@ -38,3 +38,6 @@ __pycache__/
 
 # Log files
 *.log
+
+# Google Cloud Credentials
+gcp_keys/
