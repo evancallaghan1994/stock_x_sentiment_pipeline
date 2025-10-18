@@ -30,4 +30,11 @@ __pycache__/
 # HTML files
 *.html
 
-# CSS files
+# Key files
+*.key
+
+# IDE files
+.idea/
+
+# Log files
+*.log
