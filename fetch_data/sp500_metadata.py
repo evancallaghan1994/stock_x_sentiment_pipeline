@@ -24,3 +24,15 @@ import pandas as pd # Data manipulation and analysis
 from dotenv import load_dotenv # For loading environment variables
 from wordfreq import word_frequency # For getting word frequency
 import praw # For Reddit API
+
+# Step 0: Load environment variables + Reddit API credentials
+load_dotenv()
+
+# Create a Reddit API client
+reddit = praw.Reddit(
+    client_id=os.getenv("REDDIT_CLIENT_ID"),
+    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+    user_agent=os.getenv("REDDIT_USER_AGENT")
+)
+# Restrict code to read-only moode; avoid accidental writing to Reddit
+reddit.read_only = True
