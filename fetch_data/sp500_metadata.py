@@ -18,3 +18,9 @@ in a 3 step process:
     3. Manually review the results and adjust the risk scores as needed.
 """
 
+import os # For environment variables and file paths
+import time # Time management to avoid rate limiting
+import pandas as pd # Data manipulation and analysis
+from dotenv import load_dotenv # For loading environment variables
+from wordfreq import word_frequency # For getting word frequency
+import praw # For Reddit API
