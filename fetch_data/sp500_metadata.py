@@ -24,6 +24,7 @@ import pandas as pd # Data manipulation and analysis
 from dotenv import load_dotenv # For loading environment variables
 from wordfreq import word_frequency # For getting word frequency
 import praw # For Reddit API
+import re # Regular expressions for text processing
 
 # Step 0: Load environment variables + Reddit API credentials
 load_dotenv()
@@ -36,3 +37,77 @@ reddit = praw.Reddit(
 )
 # Restrict code to read-only moode; avoid accidental writing to Reddit
 reddit.read_only = True
+
+# Step 1: Word Frequency Analysis
+stock_ticker_name_df = pd.read_csv("sp500_tickers.csv")
+
+# Function to calculate risk frequency for 
+# a given stock ticker/company name
+def classify_wordfreq(term: str):
+    """Return low/medium/high based on English frequency."""
+    freq = word_frequency(term.lower(), "en")
+    if freq > 1e-5:
+        risk = "high"
+    elif freq > 1e-6:
+        risk = "medium"
+    else:
+        risk = "low"
+    return risk, freq
+
+# Loop through each ticker/company name and calculate risk frequency
+wordfreq_risk_scores = []
+for _, row in stock_ticker_name_df.iterrows():
+    symbol = row["Symbol"] # Ticker symbol
+    full_company_name = str(row["Security"]) # Company name
+    # Company names can be multiple words and sometimes it's
+    # necessary. If the company name is more than one word, 
+    # we will use two words to calculate the risk, unless the 
+    # second word is corporate suffix like 'inc' or 'corp'.
+    # Need to keep ampersand (&) for special cases (PG&E, AT&T)
+    corporate_suffixes = {
+        "inc", "incorporated", "corp", "corporation", 
+        "ltd", "llc"
+    }
+
+    # Some companies have parentheses in the name that must be removed
+    name_no_paren = re.sub(r"\(.*?\)", "", full_company_name).strip()
+
+    name_parts = [
+        re.sub(r"[^\w&]", "", word) 
+        for word in name_no_paren.split()
+    ]
+    name_filtered = [
+        word for word in name_parts 
+        if word.lower() not in corporate_suffixes
+    ]
+
+    # For company names that are more than one word after filtering
+    # recombine into a single string
+    if len(name_filtered) > 1:
+        company_name = (
+            " ".join(name_filtered[:2])
+        )
+    else:
+        company_name = (
+            name_filtered[0] 
+            if name_filtered 
+            else name_no_paren
+        )
+
+    # Calculate risk frequency for company name
+    ticker_risk, ticker_freq = classify_wordfreq(symbol)
+    company_name_risk, company_name_freq = classify_wordfreq(company_name)
+
+    wordfreq_risk_scores.append(
+        {
+            "Symbol": symbol,
+            "CompanyName": company_name,
+            "TickerRisk_wordfreq": ticker_risk,
+            "TickerFreq": ticker_freq,
+            "NameRisk_wordfreq": company_name_risk,
+            "NameFreq": company_name_freq,
+        }
+    )
+wordfreq_df = pd.DataFrame(wordfreq_risk_scores)
+
+
