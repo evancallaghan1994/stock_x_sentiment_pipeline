@@ -17,7 +17,9 @@ in a 3 step process:
     frequently enough to warrant a higher risk score.
     3. Manually review the results and adjust the risk scores as needed.
 """
-
+# -------------------------------------------------------------------------
+# Add Imports
+# -------------------------------------------------------------------------
 import os # For environment variables and file paths
 import time # Time management to avoid rate limiting
 import pandas as pd # Data manipulation and analysis
@@ -26,7 +28,9 @@ from wordfreq import word_frequency # For getting word frequency
 import praw # For Reddit API
 import re # Regular expressions for text processing
 
+# -------------------------------------------------------------------------
 # Step 0: Load environment variables + Reddit API credentials
+# -------------------------------------------------------------------------
 load_dotenv()
 
 # Create a Reddit API client
@@ -38,7 +42,9 @@ reddit = praw.Reddit(
 # Restrict code to read-only moode; avoid accidental writing to Reddit
 reddit.read_only = True
 
+# -------------------------------------------------------------------------
 # Step 1: Word Frequency Analysis
+# -------------------------------------------------------------------------
 stock_ticker_name_df = pd.read_csv("sp500_tickers.csv")
 
 # Function to calculate risk frequency for 
@@ -95,8 +101,12 @@ for _, row in stock_ticker_name_df.iterrows():
         )
 
     # Calculate risk frequency for company name
-    ticker_risk, ticker_freq = classify_wordfreq(symbol)
-    company_name_risk, company_name_freq = classify_wordfreq(company_name)
+    ticker_risk, ticker_freq = (
+        classify_wordfreq(symbol
+    )
+    company_name_risk, company_name_freq = (
+        classify_wordfreq(company_name)
+    )
 
     wordfreq_risk_scores.append(
         {
@@ -110,4 +120,41 @@ for _, row in stock_ticker_name_df.iterrows():
     )
 wordfreq_df = pd.DataFrame(wordfreq_risk_scores)
 
+# -------------------------------------------------------------------------
+# Step 2: Reddit Noise Risk Analysis
+    # Check top 10 highest traffic subreddits unrelated to stocks/investing
+    # to see if any of the low/medium risk words appear frequently enough 
+    # to warrant a higher risk score. 
+# -------------------------------------------------------------------------
+popular_subreddits = [
+    "funny", "AskReddit", "gaming", "worldnews",
+    "todayilearned", "aww", "music", "memes",
+    "pics", "videos"
+]
 
+reddit_cache = {}
+
+def classify_reddit_noise(term: str):
+    """ Search through subreddits and classify based on number of hits"""
+    if term in reddit_cache:
+        return reddit_cache[term]
+
+    total_hits = 0
+    for sub in popular_subreddits:
+        try:
+            results = reddit.subreddit(sub).search(term, limit=25)
+            total_hits += len(results)
+        except Exception as e:
+            print(f"Error searching subreddit {sub}: {e}")
+        time.sleep(0.8)
+
+    if total_hits > 10:
+        risk = "high"
+    elif total_hits >= 5:
+        risk = "medium"
+    else:
+        risk = "low"
+
+    reddit_cache[term] = (risk, total_hits)
+    return reddit_cache[term]   
+    
