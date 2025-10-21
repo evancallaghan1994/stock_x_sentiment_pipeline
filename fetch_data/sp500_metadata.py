@@ -142,7 +142,7 @@ def classify_reddit_noise(term: str):
     total_hits = 0
     for sub in popular_subreddits:
         try:
-            results = reddit.subreddit(sub).search(term, limit=25)
+            results = list(reddit.subreddit(sub).search(term, limit=25))
             total_hits += len(results)
         except Exception as e:
             print(f"Error searching subreddit {sub}: {e}")
@@ -158,3 +158,79 @@ def classify_reddit_noise(term: str):
     reddit_cache[term] = (risk, total_hits)
     return reddit_cache[term]   
     
+# Calculate Reddit Noise Check
+reddit_risk_scores = []
+for _, row in wordfreq_df.iterrows():
+    symbol = row["Symbol"]
+    company_name = row["CompanyName"]
+    ticker_risk, ticker_hits = classify_reddit_noise(symbol)
+    name_risk, name_hits = classify_reddit_noise(company_name)
+
+    reddit_risk_scores.append(
+        {
+            "Symbol": symbol,
+            "CompanyName": company_name,
+            "TickerRisk_reddit": ticker_risk,
+            "TickerHits": ticker_hits,
+            "NameRisk_reddit": name_risk,
+            "NameHits": name_hits,
+        }
+    )
+reddit_df = pd.DataFrame(reddit_risk_scores)
+
+# -------------------------------------------------------------------------
+# Step 3: Combine Risk Score DataFrames + Write Files
+# -------------------------------------------------------------------------
+merged_risk_scores = pd.merge(
+    wordfreq_df,
+    reddit_df,
+    on=["Symbol"],
+    how="left")
+
+risk_to_num = {"low": 1, "medium": 2, "high": 3}
+
+def combine_risks(row, prefix):
+    wf = row[f"{prefix}Risk_wordfreq"]
+    rd = row[f"{prefix}Risk_reddit"]
+    if "high" in [wf, rd]:
+        return "high"
+    elif "medium" in [wf, rd]:
+        return "medium"
+    else:
+        return "low"
+
+merged_risk_scores["TickerRisk_total"] = merged_risk_scores.apply(
+    lambda row: combine_risks(row, "Ticker"), axis=1)
+merged_risk_scores["NameRisk_total"] = merged_risk_scores.apply(
+    lambda row: combine_risks(row, "Name"), axis=1)
+merged_risk_scores["TickerRisk_Num"] = (
+    merged_risk_scores["TickerRisk_total"].map(risk_to_num)
+)
+merged_risk_scores["NameRisk_Num"] = (
+    merged_risk_scores["NameRisk_total"].map(risk_to_num)
+)
+
+# Save initial generated metadata file
+os.makedirs("config", exist_ok=True)
+initial_md_path = "config/sp500_metadata_initial.csv"
+merged_risk_scores.to_csv(initial_md_path, index=False)
+print(f"Successfuly wrote {initial_md_path}")
+
+# Apply manual overrides if file exists
+override_path = "config/sp500_metadata_overrides.csv"
+final_path = "config/sp500_metadata.csv"
+
+if os.path.exists(override_path):
+    overrides = pd.read_csv(override_path)
+    for col in overrides.columns:
+        if col in merged_risk_scores.columns:
+            merged_risk_scores.set_index("Symbol", inplace=True)
+            overrides.set_index("Symbol", inplace=True)
+            merged_risk_scores.update(overrides)
+            merged_risk_scores.reset_index(inplace=True)
+            overrides.reset_index(inplace=True)
+    print(f"Successfuly applied overrides from {override_path}")
+
+merged_risk_scores.to_csv(final_path, index=False)
+print(f"Final metadata file written to {final_path}")
+
