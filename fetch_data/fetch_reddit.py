@@ -138,3 +138,40 @@ def collect_for_ticker(row, lookback_hours=48, per_term_limit=50, min_posts_for_
         rows += search_reddit_for_term(f"\"{row['CompanyName']}\"", row, cutoff, per_term_limit)
 
     return rows
+
+#-------------------------------------------------------------------------
+# Reddit Ingestion Pipeline Orchestration
+    # Loads S&P 500 tickers and company names from S&P 500 metadata file
+    # Instantiates collect_for_ticker() function to crawl subreddit posts
+        # for each ticker/company name and store as list of dictionaries
+    # Converts the list of dictionaries into a pandas DataFrame
+    # Drops duplicate posts (within each individual ticker/name)
+    # Save as parquet file and upload to GCP bucket (bronze layer)
+#-------------------------------------------------------------------------
+def run_reddit_ingestion(sample_n=40):
+    sample = meta.sample(n=min(sample_n, len(meta)), random_state=42)
+    all_rows = []
+
+    for _, row in tqdm(sample.iterrows(), total=len(sample), desc="Fetching Reddit posts"):
+        all_rows += collect_for_ticker(row)
+
+    df = pd.DataFrame(all_rows).drop_duplicates(["ticker", "post_id"])
+    print(f"Collected {len(df)} Reddit posts.")
+
+    if df.empty:
+        print("⚠️ No posts collected. Check filters or rate limits.")
+        return
+
+    # Save locally
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    local_file = f"reddit_raw_{date_str}.parquet"
+    df.to_parquet(local_file, index=False)
+
+    # Upload to GCS Bronze
+    blob_path = f"bronze/reddit/ingest_date={date_str}/reddit_raw.parquet"
+    storage_client.bucket(bucket_name).blob(blob_path).upload_from_filename(local_file)
+    print(f"✅ Uploaded to gs://{bucket_name}/{blob_path}")
+
+
+if __name__ == "__main__":
+    run_reddit_ingestion()
