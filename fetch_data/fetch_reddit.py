@@ -95,4 +95,46 @@ def search_reddit_for_term(term, row, cutoff, per_term_limit):
 # $TICKER is always used to search first. It should be enough to find posts
     # and is low-risk.
 # If $TICKER results in too few posts, we allow fallback to the ticker symbol itself.
+# Decides which search term to use, then uses the reddit crawler
+    # function to crawl reddit and pull posts with that term
 #-------------------------------------------------------------------------
+def collect_for_ticker(row, lookback_hours=48, per_term_limit=50, min_posts_for_fallback=10):
+    """
+    Collect recent posts for a single ticker.
+    Precision-first strategy:
+      1. Always search $TICKER (high precision)
+      2. Add plain TICKER only if low risk
+      3. If too few posts (< min_posts_for_fallback) and medium/high risk → fallback (allow plain TICKER)
+      4. Add "CompanyName" only if low-risk and ticker not high-risk
+    """
+    cutoff = time.time() - lookback_hours * 3600
+    rows = []
+
+    # 1. Always include $TICKER (finance-specific usage)
+    base_terms = [f"${row['Symbol']}"]
+
+    # 2. Include plain TICKER if low risk
+    if row["TickerRisk_total"] == "low":
+        base_terms.append(row["Symbol"])
+
+    # Collect posts for all base (safe) terms
+    for term in base_terms:
+        rows += search_reddit_for_term(term, row, cutoff, per_term_limit)
+
+    # 3. Fallback: if too few posts AND ticker is medium/high risk
+    if len(rows) < min_posts_for_fallback and row["TickerRisk_total"] in ("medium", "high"):
+        print(
+            f"⚠️ Enabling fallback for {row['Symbol']} "
+            f"(only {len(rows)} posts found from high-precision terms)"
+        )
+        rows += search_reddit_for_term(row["Symbol"], row, cutoff, per_term_limit)
+
+    # 4. Include safe company name if allowed
+    if (
+        isinstance(row["CompanyName"], str)
+        and row["NameRisk_total"] == "low"
+        and row["TickerRisk_total"] != "high"
+    ):
+        rows += search_reddit_for_term(f"\"{row['CompanyName']}\"", row, cutoff, per_term_limit)
+
+    return rows
