@@ -60,4 +60,6 @@
 <br><br><br>
 
 ## License
+This project is publicly accessible for educational and portfolio demonstration purposes only.  
+See the [LICENSE](LICENSE) file for full terms of use.
 <br><br><br>
