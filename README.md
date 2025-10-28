@@ -30,6 +30,7 @@ Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, th
 | Version Control & Deployment | Git, Docker |
 
 <br>
+
 ## Data Sources & Understanding
 <br><br>
 
