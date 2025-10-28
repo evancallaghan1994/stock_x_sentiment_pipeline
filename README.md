@@ -18,27 +18,18 @@ Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, th
 <br><br>
 
 ## Tech Stack
-- **Programming:** Python, PySpark
-- **Data Platform:** Databricks, Google Cloud Storage
-- **Orchestration:** Apache Airflow
-- **Data Warehouse:** BigQuery / Databricks SQL
-- **Visualization:** Tableau
-- **Architecture:** Medallion (Bronze &rarr; Silver &rarr; Gold)
-- **Version Control & Deployment:** Git, Docker
-<br>
 
-| Category | Tools / Technologies |
+| **Category** | **Tools & Technologies** |
 |-----------|----------------------|
-| **Programming** | Python, PySpark |
-| **Data Platform** | Databricks, Google Cloud Storage |
-| **Orchestration** | Apache Airflow |
-| **Data Warehouse** | BigQuery / Databricks SQL |
-| **Visualization** | Tableau |
-| **Architecture** | Medallion (Bronze &rarr; Silver &rarr; Gold) |
-| **Version Control & Deployment** | Git, Docker |
+| Programming | Python, PySpark |
+| Data Platform | Databricks, Google Cloud Storage |
+| Orchestration | Apache Airflow |
+| Data Warehouse | BigQuery / Databricks SQL |
+| Visualization | Tableau |
+| Architecture | Medallion (Bronze &rarr; Silver &rarr; Gold) |
+| Version Control & Deployment | Git, Docker |
 
 <br>
-
 ## Data Sources & Understanding
 <br><br>
 
