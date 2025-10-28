@@ -1,8 +1,9 @@
 # Stock Sentiment ELT Pipeline
-_An automated data pipeline combining historical stock data and Reddit sentiment analysis using Databricks, Google Cloud, and Airflow.
+*An automated data pipeline combining historical stock data and Reddit sentiment analysis using Databricks, Google Cloud, and Airflow*
+[Placeholder]
 
 ## Overview
-
+[Placeholder]
 
 ## Repository Navigation Directions
 
