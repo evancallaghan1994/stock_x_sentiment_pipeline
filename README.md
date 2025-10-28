@@ -26,6 +26,7 @@ Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, th
 - **Architecture:** Medallion (Bronze &rarr; Silver &rarr; Gold)
 - **Version Control & Deployment:** Git, Docker
 <br>
+
 | Category | Tools / Technologies |
 |-----------|----------------------|
 | **Programming** | Python, PySpark |
@@ -35,6 +36,7 @@ Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, th
 | **Visualization** | Tableau |
 | **Architecture** | Medallion (Bronze &rarr; Silver &rarr; Gold) |
 | **Version Control & Deployment** | Git, Docker |
+
 <br>
 
 ## Data Sources & Understanding
