@@ -20,6 +20,7 @@ License:
 import os
 import sys
 from datetime import datetime
+import logging
 
 # ----------------------------------------------------------------------
 # Third-party Imports
@@ -40,8 +41,15 @@ from fetch_data.fetch_reddit import (
     collect_for_ticker,
     run_reddit_ingestion,
     asset_meta,
-    storage_client,
     bucket_name,
+)
+
+# ======================================================================
+# Logging Configuration
+# ======================================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
 )
 
 # ======================================================================
@@ -58,3 +66,25 @@ def sample_size():
 def test_gcs_path():
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     return f"bronze/reddit/ingest_date={date_str}/reddit_raw.parquet"
+
+# ======================================================================
+# Integration Test: Full Reddit Ingestion (Small Sample)
+# ======================================================================
+# Run full Reddit ingestion pipeline with a small sample size to
+# verify end-to-end functionality.
+def test_reddit_ingestion(sample_size, test_gcs_path):
+
+    # Run the ingestion pipeline with testing sample size.
+    run_reddit_ingestion(sample_n=sample_size)
+
+    # Verify upload to GCS
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blobs = list(bucket.list_blobs(prefix=os.path.dirname(test_gcs_path)))
+
+    # Check that the expected output file exists in GCS.
+    assert any(b.name == test_gcs_path for b in blobs), \
+    f"{test_gcs_path} not found in GCS Bronze layer."
+
+    # Confirm execution of Reddit ingestion pipeline.
+    logging.info("Full Reddit ingestion pipeline executed successfully.")
