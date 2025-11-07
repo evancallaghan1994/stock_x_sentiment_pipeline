@@ -1,5 +1,5 @@
 """
-This script fetches stock data and twitter sentiment data for a given stock ticker.
+This script fetches historical daily OHLCV data for a given stock ticker from Yahoo Finance.
 
 """
 # First, we need to fetch the stock data.
