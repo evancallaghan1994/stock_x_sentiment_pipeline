@@ -1,11 +1,12 @@
 # Stock Sentiment ELT Pipeline
-*An automated data pipeline combining historical stock data and Reddit sentiment analysis using Databricks, Google Cloud, and Airflow.*
+*An automated data pipeline combining historical stock data and news analysis using Databricks, Google Cloud, and Airflow.*
 <br>
 
 ## Overview
-This project implements an ELT data pipeline that integrates financial market data with social sentiment analytics. The pipeline ingests five years of daily historical OHLCV stock data for all S&P 500 companies from Yahoo Finance and combines it with Reddit post and comment data extracted from the ten leading subreddits focused on stocks and investing. Orchestration and workflow automation are managed by Apache Airflow, which coordinates and schedules daily extraction, transformation, and load processes. The primary objective is to engineer a reliable and maintainable ELT pipeline that delivers high-quality, analysis-ready data for downstream analytical and modeling workloads. The curated data is subsequently used to analyze relationships between market sentiment and stock performance, generate and refresh interactive Tableau dashboards, and evaluate whether sentiment dynamics exhibit predictive value for future price movements. 
+This project implements an ELT data pipeline that integrates financial market data with news sentiment analytics. The pipeline ingests daily historical OHLCV stock data for 15 major stocks and ETFs (including AAPL, NVDA, TSLA, MSFT, GOOGL, META, and others) from Yahoo Finance and combines it with news articles and headlines extracted from the Stock News API. Orchestration and workflow automation are managed by Apache Airflow, which coordinates and schedules daily incremental extraction, transformation, and load processes. The primary objective is to engineer a reliable and maintainable ELT pipeline that delivers high-quality, analysis-ready data for downstream analytical and modeling workloads. The curated data is subsequently used to analyze relationships between market sentiment and stock performance, generate and refresh interactive Tableau dashboards, and evaluate whether sentiment dynamics exhibit predictive value for future price movements.
 
-Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, the system follows a Medallion architecture (Bronze &rarr; Silver &rarr; Gold) to ensure scalable, incremental data processing and lineage clarity. Data ingestion and transformation are implemented through modular Python components and Databricks notebooks, while orchestration and automation are executed via Airflow DAGs. Processed datasets are persisted in a Google Cloud Storage–based data lake and subsequently loaded into a data warehouse (BigQuery or Databricks SQL) for SQL-driven analytics and Tableau dashboard integration. This project delivers a fully automated and scalable ELT pipeline designed with production-level reliability, observability, and reproducibility across ingestion, transformation, storage, and analytics layers.
+Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, the system follows a Medallion architecture (Bronze → Silver → Gold) to ensure scalable, incremental data processing and lineage clarity. Data ingestion and transformation are implemented through modular Python components and production-ready transformation scripts, while orchestration and automation are executed via Airflow DAGs. News articles are analyzed using FINbert (financial BERT) and VADER sentiment models to generate comprehensive sentiment scores. Processed datasets are persisted in a Google Cloud Storage–based data lake and subsequently loaded into BigQuery for SQL-driven analytics and Tableau dashboard integration. This project delivers a fully automated and scalable ELT pipeline designed with production-level reliability, observability, and reproducibility across ingestion, transformation, storage, and analytics layers.
+
 <br>
 
 ## Repository Navigation Directions
@@ -24,7 +25,7 @@ Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, th
 | Programming | Python, PySpark |
 | Data Platform | Databricks, Google Cloud Storage |
 | Orchestration | Apache Airflow |
-| Data Warehouse | BigQuery / Databricks SQL |
+| Data Warehouse | BigQuery |
 | Visualization | Tableau |
 | Architecture | Medallion (Bronze &rarr; Silver &rarr; Gold) |
 | Version Control & Deployment | Git, Docker |
@@ -32,22 +33,55 @@ Developed with Python, PySpark, Databricks, Google Cloud, and Apache Airflow, th
 <br>
 
 ## Data Sources & Understanding
-<br><br>
+<br>
+
+- Yahoo Finance: Stock Data
+- Stock News API: News Articles and Headlines
+
+<br>
 
 ## Data Flow & Medallion Architecture
-<br><br>
+<br>
+
+- Bronze Layer: GCS bucket for raw data
+- Silver Layer: BigQuery for transformed data
+- Gold Layer: 
+
+<br>
 
 ## Pipeline Componants
-<br><br>
+<br>
+
+- fetch_data/ - Data ingestion scripts
+- transformation_scripts/ - converted transformation pipelines
+- airflow_dags/ - orchestration
+- setup_scripts/ - infrastructure setup
+- notebooks/ - jupyter notebooks for exploratory transformation
+
+<br>
 
 ## Automation
 <br><br>
 
 ## Data Preparation & Transformation
-<br><br>
+<br>
+
+- Data cleaning/validation steps
+- Feature engineering
+- Technical indicators calculated from daily closing price
+- Sentiment analysis via FINbert and VADER
+
+<br>
 
 ## Testing & Data Quality
-<br><br>
+<br>
+
+- Validation notebooks
+- Pytest tests
+- Data quality checks
+- Validation reports
+
+<br>
 
 ## Exploratory Analysis & Visualization
 <br><br>
