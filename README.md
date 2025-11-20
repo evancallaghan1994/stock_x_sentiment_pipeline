@@ -40,13 +40,9 @@ The pipeline follows a **Medallion Architecture** pattern with three distinct la
 
 **Pipeline Flow:**
 Data Sources &rarr; Airflow DAG &rarr; Bronze (GCS) &rarr; Validation &rarr; Transformation &rarr; Silver (BigQuery) &rarr; Gold (Analytics)
-
 <br>
 
 ## Business Understanding
-
-<br>
-
 The pipeline enables analysis of relationships between financial news sentiment and stock price movements. By combining technical indicators with sentiment scores, analysts can:
 - Identify correlations between news sentiment and price changes
 - Build predictive models for price movements
@@ -71,7 +67,6 @@ The pipeline enables analysis of relationships between financial news sentiment 
 <br>
 
 ## Data Sources & Understanding
-<br>
 
 - Yahoo Finance: Stock Data
 - Stock News API: News Articles and Headlines
@@ -79,7 +74,6 @@ The pipeline enables analysis of relationships between financial news sentiment 
 <br>
 
 ## Data Flow & Medallion Architecture
-<br>
 
 **Bronze Layer (GCS):**
 - Raw stock prices
@@ -103,8 +97,6 @@ The pipeline enables analysis of relationships between financial news sentiment 
 <br>
 
 ## Pipeline Components
-
-<br>
 
 **Data Ingestion (`fetch_data/`):**
 - `fetch_yfinance_data.py` - Fetches stock OHLCV data from Yahoo Finance
@@ -132,7 +124,6 @@ The pipeline enables analysis of relationships between financial news sentiment 
 
 ## Automation
 
-<br>
 
 The pipeline is fully automated via **Apache Airflow** with the `market_pipeline` DAG:
 
@@ -187,8 +178,6 @@ airflow api-server --port 8080
 
 ## Data Preparation & Transformation
 
-<br>
-
 **Stock Price Transformation:**
 - Data cleaning: Removes duplicates, fixes invalid OHLC relationships
 - Feature engineering: 60+ technical indicators including:
@@ -217,8 +206,6 @@ airflow api-server --port 8080
 <br>
 
 ## Testing & Data Quality
-
-<br>
 
 **Unit Tests (`tests/`):**
 - `test_fetch_yfinance_data.py` - Tests stock data fetching
@@ -262,8 +249,6 @@ pytest tests/test_fetch_yfinance_data.py -v
 <br><br>
 
 ## Setup & Installation
-
-<br>
 
 **Prerequisites:**
 - Python 3.11+, Java 17+, Google Cloud account, Stock News API key, Airflow 2.4+
@@ -318,7 +303,6 @@ airflow standalone
 <br>
 
 ## Future Enhancements
-<br>
 
 - **Gold Layer Implementation**: Create aggregated datasets for Tableau and ML
 - **Real-time Processing**: Stream processing for near-real-time sentiment analysis
@@ -332,7 +316,6 @@ airflow standalone
 <br>
 
 ## Links & Resources
-<br>
 
 - [Data Dictionary](docs/data_dictionary.md) - Complete BigQuery schema documentation
 - [Airflow DAGs Documentation](airflow_dags/README.md) - DAG structure and usage
@@ -347,7 +330,6 @@ airflow standalone
 <br>
 
 ## Repository Navigation
-<br>
 
 **Quick Start:**
 1. Review `README.md` (this file) for overview
