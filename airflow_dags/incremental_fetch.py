@@ -23,7 +23,16 @@ env_path = project_root / ".env"
 load_dotenv(dotenv_path=env_path)
 
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-storage_client = storage.Client()
+
+# Lazy initialization for storage client
+_storage_client = None
+
+def get_storage_client():
+    """Get or create GCS storage client"""
+    global _storage_client
+    if _storage_client is None:
+        _storage_client = storage.Client()
+    return _storage_client
 
 
 async def fetch_prices_incremental(start_date, end_date, tickers=None):
@@ -217,7 +226,7 @@ def save_prices_to_gcs(df, date_range_str):
         logging.warning("No price data to save")
         return
     
-    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    bucket = get_storage_client().bucket(GCS_BUCKET_NAME)
     
     # Save per-ticker files
     for ticker in df['symbol'].unique():

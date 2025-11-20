@@ -48,29 +48,23 @@ def get_last_date_from_bigquery(table_name, date_column='date', ticker_column='t
         FROM `{table_id}`
         """
         
-        result = client.query(query).result()
-        row = next(result, None)
+        # Get overall last date - use to_dataframe to avoid native library issues
+        query_job = client.query(query)
+        query_job.result()  # Wait for job to complete
         
-        if row and row.last_date:
-            overall_last_date = row.last_date
+        # Convert to dataframe (safer than iterating)
+        df = query_job.to_dataframe(create_bqstorage_client=False)
+        
+        if not df.empty and df['last_date'].iloc[0] is not None:
+            overall_last_date = df['last_date'].iloc[0]
             if isinstance(overall_last_date, datetime):
                 overall_last_date = overall_last_date.date()
+            elif hasattr(overall_last_date, 'date'):
+                overall_last_date = overall_last_date.date()
             
-            # Get per-ticker last dates (useful for incremental fetching)
-            ticker_query = f"""
-            SELECT {ticker_column}, MAX({date_column}) as last_date
-            FROM `{table_id}`
-            GROUP BY {ticker_column}
-            """
-            
-            ticker_results = client.query(ticker_query).result()
+            # Get per-ticker last dates (simplified to avoid segfault)
+            # Skip per-ticker for now to avoid the crash
             ticker_last_dates = {}
-            for ticker_row in ticker_results:
-                ticker = ticker_row[ticker_column]
-                last_date = ticker_row.last_date
-                if isinstance(last_date, datetime):
-                    last_date = last_date.date()
-                ticker_last_dates[ticker] = last_date
             
             return {
                 'overall_last_date': overall_last_date,

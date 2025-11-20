@@ -1,11 +1,10 @@
 paths:
   bronze:
-    reddit_raw: "bronze/reddit/"
+    news_raw: "bronze/news/stock_news_api"
     yfinance_stock_prices_raw: "bronze/yfinance_prices/"
   silver:
-    reddit_records_clean: "silver/reddit/records/"
-    reddit_scored: "silver/reddit/scored/"
-    yfinance_stock_prices_clean: "silver/yfinance_prices/"
+    news_sentiment: "silver/news_sentiment_silver"
+    stock_prices: "silver/stock_prices_silver"
   gold:
-    reddit_daily_agg: "gold/reddit/sentiment_daily/"
-    prices_sent_daily_agg: "gold/sentiment_prices/fact_daily/"
+    sentiment_price_daily: "gold/sentiment_prices/daily"
+    # ml_price_prediction: "gold/ml/price_prediction"

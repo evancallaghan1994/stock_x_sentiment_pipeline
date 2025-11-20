@@ -4,8 +4,7 @@ Orchestrates incremental data ingestion, validation, transformation, and loading
 """
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
+from airflow.providers.standard.operators.python import PythonOperator 
 import os
 import sys
 from pathlib import Path
@@ -45,8 +44,8 @@ dag = DAG(
     'market_pipeline',
     default_args=default_args,
     description='Incremental market data pipeline: prices, news, validation, transformation, and loading',
-    schedule_interval=None,  # Manual trigger only (or set to '@daily' for daily runs)
-    start_date=days_ago(1),
+    schedule=None,  # Manual trigger only (or set to '@daily' for daily runs)
+    start_date=datetime.now() - timedelta(days=1),
     catchup=False,
     tags=['market_data', 'incremental', 'prices', 'news', 'sentiment'],
 )
@@ -173,12 +172,12 @@ def validate_bronze_task(**context):
 
 
 def load_bigquery_task(**context):
-    """Load transformed data to BigQuery Silver tables"""
-    logging.info("Loading data to BigQuery...")
+    """Load transformed data to BigQuery Silver tables
     
-    # This would load the transformed data to BigQuery
-    # The notebooks already handle this, so this is mainly for orchestration
-    logging.info("✅ BigQuery load complete (placeholder)")
+    Note: The transformation scripts already load data to BigQuery.
+    This task is a no-op for orchestration purposes.
+    """
+    return
 
 
 def notify_success_task(**context):

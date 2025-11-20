@@ -1,10 +1,12 @@
 # Virtual environment
 venv/
+venv311/
 
 # Python bytecode
 __pycache__/
 *.py[cod]
 *.pyc
+.pytest_cache/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
@@ -38,6 +40,7 @@ __pycache__/
 
 # Log files
 *.log
+logs/
 
 # Google Cloud Credentials
 gcp_keys/

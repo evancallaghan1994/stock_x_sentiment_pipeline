@@ -66,24 +66,34 @@ logging.basicConfig(
     ]
 )
 
-# Initialize GCS client
-storage_client = storage.Client()
+# Initialize GCS client (lazy initialization)
+_storage_client = None
+
+def get_storage_client():
+    """Get or create GCS storage client"""
+    global _storage_client
+    if _storage_client is None:
+        _storage_client = storage.Client()
+    return _storage_client
 
 # Load stock metadata
 config_path = os.path.join(project_root, "config", "stock_metadata.csv")
 stock_df = pd.read_csv(config_path)
 tickers = stock_df['Symbol'].tolist()
 
-logging.info("=" * 70)
-logging.info("STOCK NEWS API - DATA COLLECTION")
-logging.info("=" * 70)
-logging.info(f"Total stocks/ETFs: {len(tickers)}")
-logging.info(f"Target articles per day: {TARGET_ARTICLES_PER_DAY}")
-logging.info(f"Lookback period: {LOOKBACK_DAYS} days")
-logging.info(f"Estimated total API calls: {len(tickers) * LOOKBACK_DAYS}")
-logging.info(f"Premium plan limit: 50,000 calls/month")
-logging.info("=" * 70)
-logging.info("")
+def log_collection_start():
+    """Log collection start information"""
+    logging.info("=" * 70)
+    logging.info("STOCK NEWS API - DATA COLLECTION")
+    logging.info("=" * 70)
+    logging.info(f"Total stocks/ETFs: {len(tickers)}")
+    logging.info(f"Target articles per day: {TARGET_ARTICLES_PER_DAY}")
+    logging.info(f"Lookback period: {LOOKBACK_DAYS} days")
+    logging.info(f"Estimated total API calls: {len(tickers) * LOOKBACK_DAYS}")
+    logging.info(f"Premium plan limit: 50,000 calls/month")
+    logging.info("=" * 70)
+    logging.info("")
+
 
 # Load progress
 if os.path.exists(PROGRESS_FILE):
@@ -516,7 +526,7 @@ def save_to_gcs(data, ticker):
     df.to_parquet(local_parquet, index=False)
     
     # Upload to GCS
-    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    bucket = get_storage_client().bucket(GCS_BUCKET_NAME)
     gcs_path = f"bronze/news/stock_news_api/{ticker}/sn_news_{ticker}.parquet"
     blob = bucket.blob(gcs_path)
     blob.upload_from_filename(local_parquet)
@@ -528,6 +538,9 @@ def save_to_gcs(data, ticker):
 
 # Main execution
 if __name__ == "__main__":
+    # Call the logging function
+    log_collection_start()
+
     # Production mode: Process all tickers
     # Filter out already completed tickers
     remaining_tickers = [t for t in tickers if t not in progress.get('completed_tickers', [])]
