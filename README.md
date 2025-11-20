@@ -1,19 +1,16 @@
 # Stock Sentiment ELT Pipeline
 *An automated data pipeline combining historical stock data and news analysis using Google Cloud and Airflow.*
-
 <br>
 
 ## Overview
 This project implements an ELT data pipeline that integrates financial market data with news sentiment analytics. The pipeline ingests daily historical OHLCV stock data for 15 major stocks and ETFs (including AAPL, NVDA, TSLA, MSFT, GOOGL, META, and others) from Yahoo Finance and combines it with news articles and headlines extracted from the Stock News API. Orchestration and workflow automation are managed by Apache Airflow, which coordinates and schedules daily incremental extraction, transformation, and load processes. The primary objective is to engineer a reliable and maintainable ELT pipeline that delivers high-quality, analysis-ready data for downstream analytical and modeling workloads. The curated data is subsequently used to analyze relationships between market sentiment and stock performance, generate and refresh interactive Tableau dashboards, and evaluate whether sentiment dynamics exhibit predictive value for future price movements.
 
 Developed with Python, PySpark, Google Cloud, and Apache Airflow, the system follows a Medallion architecture (Bronze → Silver → Gold) to ensure scalable, incremental data processing and lineage clarity. Data ingestion and transformation are implemented through modular Python components and production-ready transformation scripts, while orchestration and automation are executed via Airflow DAGs. News articles are analyzed using FINbert (financial BERT) and VADER sentiment models to generate comprehensive sentiment scores. Processed datasets are persisted in a Google Cloud Storage–based data lake and subsequently loaded into BigQuery for SQL-driven analytics and Tableau dashboard integration. This project delivers a fully automated and scalable ELT pipeline designed with production-level reliability, observability, and reproducibility across ingestion, transformation, storage, and analytics layers.
-
 <br>
 
 ## Repository Navigation Directions
 
 <br>
-
 **Key Directories:**
 - `fetch_data/` - Data ingestion scripts for Yahoo Finance and Stock News API
 - `transformation_scripts/` - Production-ready Python scripts for data transformation
@@ -23,13 +20,11 @@ Developed with Python, PySpark, Google Cloud, and Apache Airflow, the system fol
 - `tests/` - Unit and integration tests
 - `config/` - Configuration files (paths, metadata)
 - `docs/` - Documentation (data dictionary, etc.)
-
 <br>
 
 ## Architecture
 
 <br>
-
 The pipeline follows a **Medallion Architecture** pattern with three distinct layers:
 
 1. **Bronze Layer (Raw Data)**: Google Cloud Storage (GCS) bucket storing raw, unprocessed data from APIs
