@@ -11,6 +11,7 @@ Developed with Python, PySpark, Google Cloud, and Apache Airflow, the system fol
 ## Repository Navigation Directions
 
 <br>
+
 **Key Directories:**
 - `fetch_data/` - Data ingestion scripts for Yahoo Finance and Stock News API
 - `transformation_scripts/` - Production-ready Python scripts for data transformation
@@ -23,7 +24,6 @@ Developed with Python, PySpark, Google Cloud, and Apache Airflow, the system fol
 <br>
 
 ## Architecture
-
 <br>
 The pipeline follows a **Medallion Architecture** pattern with three distinct layers:
 
