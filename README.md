@@ -89,10 +89,10 @@ The pipeline enables analysis of relationships between financial news sentiment 
     - Cleaned and transformed
     - Sentiment analysis via FINbert and VADER
 
-- **Gold Layer (Pending):**
-    - Daily aggregated sentiment-price joins for Tableau
-    - ML feature sets for price prediction models
-    - Pre-computed analytics and time-series aggregations
+**Gold Layer (Pending):**
+- Daily aggregated sentiment-price joins for Tableau
+- ML feature sets for price prediction models
+- Pre-computed analytics and time-series aggregations
 
 <br>
 
